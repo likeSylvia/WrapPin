@@ -1,0 +1,41 @@
+name: Build unsigned WrapPin IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build unsigned archive
+        run: |
+          xcodebuild \
+            -project WrapPin.xcodeproj \
+            -scheme WrapPin \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -archivePath "$PWD/build/WrapPin.xcarchive" \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Package IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/WrapPin.xcarchive/Products/Applications/WrapPin.app build/Payload/
+          cd build
+          zip -qry WrapPin-unsigned.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: WrapPin-unsigned-ipa
+          path: build/WrapPin-unsigned.ipa
